@@ -1,11 +1,25 @@
 const express = require("express");
 const cors = require("cors");
+const models = require("./models");
+const multer=require("multer");
+
 const app = express();
 const port = 8080;
-const models = require("./models");
+
+const upload=multer({
+  storage:multer.diskStorage({
+    destination:function(req,file,cb){
+      cb(null,"upload/");
+    },
+    filename:function(req,file,cb){
+      cb(null,file.originalname);
+    }
+  }),
+})
 
 app.use(express.json());
 app.use(cors());
+app.use("/upload",express.static("upload"))
 
 app.get("/products", (req, res) => {
   models.Product.findAll({
@@ -67,6 +81,14 @@ app.post("/products", (req, res) => {
 app.post("/login", (req, res) => {
   res.send("로그인이 완료되었습니다");
 });
+
+app.post('/image',upload.single('image'),(req,res)=>{
+  const file=req.file;
+  console.log(file);
+  res.send({
+    imageUrl:file.path
+  })
+})
 
 //app 실행
 app.listen(port, () => {
