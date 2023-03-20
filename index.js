@@ -19,7 +19,7 @@ const upload=multer({
 
 app.use(express.json());
 app.use(cors());
-app.use("/upload",express.static("upload"))
+app.use("/upload",express.static("upload"));
 
 app.get("/products", (req, res) => {
   models.Product.findAll({
@@ -58,8 +58,8 @@ app.get("/products/:id", (req, res) => {
 //상품생성데이터를  데이터베이스 추가
 app.post("/products", (req, res) => {
   const body = req.body;
-  const { name, description, price, seller } = body;
-  if (!name || !description || !price || !seller) {
+  const { name, description, price, seller, imageUrl } = body;
+  if (!name || !description || !price || !seller/*  || !imageUrl */) {
     res.send("모든 필드를 입력해주세요");
   }
   models.Product.create({
@@ -67,6 +67,7 @@ app.post("/products", (req, res) => {
     description,
     price,
     seller,
+    imageUrl,
   })
     .then((result) => {
       console.log("상품생성결과:", result);
