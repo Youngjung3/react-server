@@ -1,31 +1,54 @@
 const express = require("express");
 const cors = require("cors");
 const models = require("./models");
-const multer=require("multer");
+const multer = require("multer");
 
 const app = express();
 const port = 8080;
 
-const upload=multer({
-  storage:multer.diskStorage({
-    destination:function(req,file,cb){
-      cb(null,"upload/");
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, "upload/");
     },
-    filename:function(req,file,cb){
-      cb(null,file.originalname);
-    }
+    filename: function (req, file, cb) {
+      cb(null, file.originalname);
+    },
   }),
-})
+});
 
 app.use(express.json());
 app.use(cors());
-app.use("/upload",express.static("upload"));
+app.use("/upload", express.static("upload"));
+
+app.get("/banners", (req, res) => {
+  models.Banner.findAll({
+    limit: 2, //파일 2개까지 찾음
+  })
+    .then((result) => {
+      res.send({
+        banners: result, //통신성공시 banner에 result 할당
+      });
+    })
+    .catch((error) => {
+      console.error(error);
+      res.status(500).send("에러가 발생했습니다");
+    });
+});
 
 app.get("/products", (req, res) => {
   models.Product.findAll({
-	// '참조컬럼','ASC'||'DESC'
-	order:[['createdAt','DESC']],
-	attributes:["id","name","price","seller","imageUrl","createdAt"]
+    // '참조컬럼','ASC'||'DESC'
+    order: [["createdAt", "DESC"]],
+    attributes: [
+      "id",
+      "name",
+      "price",
+      "seller",
+      "imageUrl",
+      "createdAt",
+      "soldout",
+    ],
   })
     .then((result) => {
       console.log("product 조회결과:", result);
@@ -52,14 +75,14 @@ app.get("/products/:id", (req, res) => {
     })
     .catch((error) => {
       console.error(error);
-	  res.send("상품조회시 에러가 발생했습니다");
+      res.send("상품조회시 에러가 발생했습니다");
     });
 });
 //상품생성데이터를  데이터베이스 추가
 app.post("/products", (req, res) => {
   const body = req.body;
   const { name, description, price, seller, imageUrl } = body;
-  if (!name || !description || !price || !seller/*  || !imageUrl */) {
+  if (!name || !description || !price || !seller /*  || !imageUrl */) {
     res.send("모든 필드를 입력해주세요");
   }
   models.Product.create({
@@ -78,18 +101,37 @@ app.post("/products", (req, res) => {
       //res.send("상품업로드에 문제가 발생했습니다");
     });
 });
+// api 요청 ->전달-> 응답
+app.post("/purchase/:id", (req, res) => {
+  const { id } = req.params;
+  models.Product.update(
+    {
+      soldout: 1,
+    },
+    {
+      where: { id },
+    }
+  )
+    .then((ressult) => {
+      res.send({ result: true });
+    })
+    .catch((error) => {
+      console.error(error);
+      res.status(500).send("에러가 발생했습니다")
+    });
+});
 
 app.post("/login", (req, res) => {
   res.send("로그인이 완료되었습니다");
 });
 
-app.post('/image',upload.single('image'),(req,res)=>{
-  const file=req.file;
+app.post("/image", upload.single("image"), (req, res) => {
+  const file = req.file;
   console.log(file);
   res.send({
-    imageUrl:file.path
-  })
-})
+    imageUrl: file.path,
+  });
+});
 
 //app 실행
 app.listen(port, () => {
